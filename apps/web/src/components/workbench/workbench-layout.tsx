@@ -14,14 +14,24 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useWorkbenchStore, SystemLog } from "@/store/workbench-store";
+import { TaskDisplay } from "./task-display";
+import { ChatInterface } from "./chat-interface";
 
 export function WorkbenchLayout() {
   const [userInput, setUserInput] = useState("");
-  const { addSystemLog } = useWorkbenchStore();
+  const { 
+    addSystemLog, 
+    createTask, 
+    updateAgentStatus, 
+    transferTask, 
+    tasks, 
+    agents 
+  } = useWorkbenchStore();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (userInput.trim()) {
+      // Log user input
       addSystemLog({
         id: Date.now().toString(),
         timestamp: new Date(),
@@ -29,6 +39,47 @@ export function WorkbenchLayout() {
         type: "user_input",
         source: "user",
       });
+
+      // Create task for PM Agent
+      const task = createTask({
+        title: userInput,
+        status: "pending",
+        assigner: "user",
+        assignee: "pm-agent",
+      });
+
+      // Update PM Agent status
+      updateAgentStatus("pm-agent", {
+        status: "active",
+        currentTask: task.title,
+      });
+
+      // Log task creation
+      addSystemLog({
+        id: `task-${Date.now()}`,
+        timestamp: new Date(),
+        message: `Task created: "${task.title}" assigned to PM Agent`,
+        type: "system_event",
+        source: "system",
+        metadata: { taskId: task.id },
+      });
+
+      // Auto-transfer to Analyst Agent after 2 seconds (simulating PM Agent processing)
+      setTimeout(() => {
+        transferTask(task.id, "analyst-agent");
+        
+        // Update agent statuses
+        updateAgentStatus("pm-agent", {
+          status: "idle",
+          currentTask: undefined,
+        });
+        
+        updateAgentStatus("analyst-agent", {
+          status: "active",
+          currentTask: task.title,
+        });
+      }, 2000);
+
       setUserInput("");
     }
   };
@@ -107,6 +158,9 @@ export function WorkbenchLayout() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {agentAreas.map((agent) => {
             const IconComponent = agent.icon;
+            const currentAgent = agents.find(a => a.id === agent.id);
+            const agentStatus = currentAgent?.status || "idle";
+            
             return (
               <Card
                 key={agent.id}
@@ -123,15 +177,39 @@ export function WorkbenchLayout() {
                     {agent.description}
                   </p>
                   <div className="flex items-center justify-center gap-2">
-                    <Activity className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-500 capitalize">
-                      {agent.status}
+                    <Activity className={`h-4 w-4 transition-all duration-300 ${
+                      agentStatus === 'active' ? 'text-green-500 animate-pulse' : 
+                      agentStatus === 'busy' ? 'text-orange-500 animate-spin' :
+                      'text-gray-400'
+                    }`} />
+                    <span className={`text-sm capitalize transition-all duration-300 ${
+                      agentStatus === 'active' ? 'text-green-600 font-medium' : 
+                      agentStatus === 'busy' ? 'text-orange-600 font-medium' :
+                      'text-gray-500'
+                    }`}>
+                      {agentStatus}
                     </span>
+                    {currentAgent?.currentTask && (
+                      <span className="text-xs text-gray-500 truncate ml-2">
+                        • {currentAgent.currentTask}
+                      </span>
+                    )}
                   </div>
-                  <div className="h-24 bg-white rounded border border-gray-200 flex items-center justify-center">
-                    <span className="text-xs text-gray-400">
-                      Activity area - Ready for tasks
-                    </span>
+                  <div className="min-h-24 bg-white rounded border border-gray-200 p-2">
+                    {agent.id === 'analyst-agent' && agentStatus === 'active' ? (
+                      <ChatInterface 
+                        agentId={agent.id} 
+                        isActive={agentStatus === 'active'} 
+                        currentTask={currentAgent?.currentTask}
+                      />
+                    ) : agent.id === 'analyst-agent' ? (
+                      <div className="text-sm text-gray-500 italic p-2 text-center">
+                        <div className="w-6 h-6 mx-auto mb-2 opacity-50">💬</div>
+                        Chat will activate when task is assigned
+                      </div>
+                    ) : (
+                      <TaskDisplay tasks={tasks} agentId={agent.id} />
+                    )}
                   </div>
                 </CardContent>
               </Card>
