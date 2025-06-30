@@ -1,0 +1,177 @@
+````markdown
+# Fullstack Architecture: Agent Flow
+
+### **High Level Architecture (Kiến trúc Cấp cao)**
+
+#### **Tóm tắt Kỹ thuật**
+
+Dự án "Agent Flow" sẽ được phát triển dưới dạng một ứng dụng web full-stack, chạy trên môi trường local. Kiến trúc sẽ theo mô hình **monorepo**, chứa ứng dụng frontend **Next.js** và backend **Node.js/TypeScript**. Backend sẽ mô phỏng một **Hệ thống Đa Tác tử (Multi-Agent System)** theo kiến trúc **Phân cấp (Hierarchical)**, nơi một tác tử chính điều phối các tác tử chuyên biệt khác. Giao tiếp giữa frontend và backend, cũng như giữa các tác tử, sẽ tuân thủ hoặc mô phỏng giao thức A2A của Google.
+
+#### **Sơ đồ Kiến trúc Cấp cao**
+
+```mermaid
+graph TD
+    subgraph "Môi trường Local"
+        User["👨‍💻 Người dùng (Bạn)"]
+        Browser["🌐 Trình duyệt"]
+        Backend["💻 Backend Server (Node.js/TypeScript)"]
+
+        subgraph Backend
+            Orchestrator["👑 Tác tử Điều phối (Orchestrator)"]
+            Analyst["📊 Tác tử Phân tích (Analyst)"]
+            Designer["🎨 Tác tử Thiết kế (Designer)"]
+
+            Orchestrator -- Giao nhiệm vụ (A2A) --> Analyst
+            Orchestrator -- Giao nhiệm vụ (A2A) --> Designer
+        end
+
+        User -- Tương tác --> Browser
+        Browser -- Yêu cầu HTTP --> Backend
+        Backend -- Giao tiếp (A2A) --> Analyst
+    end
+```
+````
+
+#### **Các Mẫu Kiến trúc (Architectural Patterns)**
+
+- **Monorepo:** Sử dụng một kho chứa code duy nhất để quản lý cả frontend, backend và các thư viện chia sẻ, giúp đồng bộ và nhất quán.
+- **Hệ thống Đa Tác tử Phân cấp (Hierarchical MAS):** Một tác tử chính ("Orchestrator") sẽ quản lý và điều phối luồng công việc của các tác tử chuyên môn khác.
+- **Server-Side Rendering (SSR) với Next.js:** Tận dụng khả năng của Next.js để có cấu trúc dự án rõ ràng.
+- **Sử dụng mẫu `AgentExecutor`:** Đóng gói logic cốt lõi của mỗi tác tử vào một `class` riêng biệt theo mẫu `AgentExecutor` từ `A2A-JS SDK`.
+
+### **Technology Stack Table (Bảng Công nghệ)**
+
+| Hạng mục               | Công nghệ    | Phiên bản (Đề xuất) | Mục đích                                  | Lý do Lựa chọn                                  |
+| :--------------------- | :----------- | :------------------ | :---------------------------------------- | :---------------------------------------------- |
+| **Monorepo Tool**      | Turborepo    | \~1.13              | Quản lý kho code chung (monorepo)         | Tối ưu cho các dự án JavaScript/TypeScript.     |
+| **Frontend Language**  | TypeScript   | \~5.4               | Ngôn ngữ phát triển chính cho frontend    | Tích hợp sẵn với Next.js, an toàn kiểu dữ liệu. |
+| **Frontend Framework** | Next.js      | \~14.2              | Khung sườn chính để xây dựng giao diện    | Lựa chọn của bạn, hệ sinh thái mạnh mẽ.         |
+| **UI Library**         | Tailwind CSS | \~3.4               | Cung cấp các lớp CSS tiện ích để tạo kiểu | Xây dựng giao diện nhanh, nhất quán.            |
+| **UI Components**      | shadcn/ui    | \~0.8               | Bộ sưu tập các component giao diện        | Dễ cài đặt, tùy chỉnh, chuẩn truy cập.          |
+| **State Management**   | Zustand      | \~4.5               | Quản lý trạng thái giao diện người dùng   | Nhẹ, đơn giản và hiệu quả cho demo.             |
+| **Backend Language**   | TypeScript   | \~5.4               | Ngôn ngữ phát triển chính cho backend     | Đồng bộ ngôn ngữ với frontend.                  |
+| **Backend Framework**  | Express.js   | \~4.19              | Tạo và quản lý các API endpoint           | Nhẹ, phổ biến, đủ mạnh mẽ cho backend.          |
+| **API Style**          | JSON-RPC 2.0 | 2.0                 | Giao thức giao tiếp cho A2A               | Tuân thủ theo đặc tả của A2A.                   |
+| **Database**           | SQLite       | \~5.1               | Lưu trữ dữ liệu đơn giản ở local          | Không cần cài đặt server, tiện cho demo.        |
+| **Testing Framework**  | Jest & RTL   | \~29.7              | Viết và chạy unit test, component test    | Tiêu chuẩn trong hệ sinh thái React/Next.js.    |
+| **Runtime**            | Node.js      | \~20.11 (LTS)       | Môi trường để chạy backend TypeScript     | Phiên bản ổn định (LTS).                        |
+
+### **Source Tree (Cấu trúc Thư mục)**
+
+```plaintext
+agent-flow/
+├── .github/
+│   └── workflows/
+├── apps/
+│   ├── api/
+│   │   ├── src/
+│   │   │   ├── agents/
+│   │   │   ├── core/
+│   │   │   ├── routes/
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   └── web/
+│       ├── app/
+│       ├── components/
+│       ├── lib/
+│       ├── public/
+│       ├── package.json
+│       └── tsconfig.json
+├── packages/
+│   ├── config/
+│   │   ├── eslint-preset.js
+│   │   └── tsconfig.json
+│   └── shared/
+│       ├── src/
+│       │   ├── types/
+│       │   └── index.ts
+│       └── package.json
+├── .env.example
+├── .gitignore
+├── package.json
+└── turborepo.json
+```
+
+### **Data Models (Mô hình Dữ liệu - Cập nhật theo A2A-JS SDK)**
+
+#### **Agent & AgentCard**
+
+```typescript
+interface AgentCard {
+  name: string;
+  description: string;
+  url: string;
+  provider: {
+    organization: string;
+    url: string;
+  };
+  version: string;
+  capabilities: {
+    streaming: boolean;
+    pushNotifications: boolean;
+    stateTransitionHistory: boolean;
+  };
+  skills: Skill[];
+}
+
+interface Skill {
+  id: string;
+  name: string;
+  description: string;
+}
+```
+
+#### **Message (Tin nhắn)**
+
+```typescript
+interface Message {
+  id: string;
+  sender: "user" | string; // user hoặc agent_id
+  content: string;
+  timestamp: Date;
+}
+```
+
+#### **Task (Tác vụ)**
+
+```typescript
+type TaskStatus = "pending" | "in-progress" | "completed" | "failed";
+
+interface Task {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  assigner: string; // agent_id
+  assignee: string; // agent_id
+  createdAt: Date;
+}
+```
+
+#### **Artifact (Hiện vật)**
+
+```typescript
+type ArtifactType = "markdown" | "image/png" | "json";
+
+interface Artifact {
+  id: string;
+  name: string;
+  type: ArtifactType;
+  contentUrl: string;
+  creator: string; // agent_id
+  createdAt: Date;
+}
+```
+
+#### **DemoSession (Phiên làm việc)**
+
+```typescript
+interface DemoSession {
+  id: string;
+  status: "active" | "completed";
+  messages: Message[];
+  tasks: Task[];
+  artifacts: Artifact[];
+  log: string[];
+}
+```
