@@ -1,0 +1,19 @@
+{
+    "name": "agent-flow",
+    "version": "0.1.0",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "build": "turbo build",
+        "dev": "turbo dev",
+        "lint": "turbo lint",
+        "clean": "turbo clean"
+    },
+    "devDependencies": {
+        "turbo": "^2.5.4"
+    },
+    "packageManager": "npm@10.0.0"
+}
