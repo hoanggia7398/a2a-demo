@@ -1,0 +1,9 @@
+
+> web@0.1.0 lint
+> next lint
+
+
+./src/components/workbench/artifact-display.tsx
+22:14  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

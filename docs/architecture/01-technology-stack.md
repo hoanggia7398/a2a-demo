@@ -4,7 +4,7 @@
 | :--------------------- | :----------- | :------------------ | :---------------------------------------- | :---------------------------------------------- |
 | **Monorepo Tool**      | Turborepo    | ~1.13              | Quản lý kho code chung (monorepo)         | Tối ưu cho các dự án JavaScript/TypeScript.     |
 | **Frontend Language**  | TypeScript   | ~5.4               | Ngôn ngữ phát triển chính cho frontend    | Tích hợp sẵn với Next.js, an toàn kiểu dữ liệu. |
-| **Frontend Framework** | Next.js      | ~14.2              | Khung sườn chính để xây dựng giao diện    | Lựa chọn của bạn, hệ sinh thái mạnh mẽ.         |
+| **Frontend Framework** | Next.js      | ~15.3.4              | Khung sườn chính để xây dựng giao diện    | Lựa chọn của bạn, hệ sinh thái mạnh mẽ.         |
 | **UI Library**         | Tailwind CSS | ~3.4               | Cung cấp các lớp CSS tiện ích để tạo kiểu | Xây dựng giao diện nhanh, nhất quán.            |
 | **UI Components**      | shadcn/ui    | ~0.8               | Bộ sưu tập các component giao diện        | Dễ cài đặt, tùy chỉnh, chuẩn truy cập.          |
 | **State Management**   | Zustand      | ~4.5               | Quản lý trạng thái giao diện người dùng   | Nhẹ, đơn giản và hiệu quả cho demo.             |

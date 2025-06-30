@@ -16,16 +16,19 @@ import { useState } from "react";
 import { useWorkbenchStore, SystemLog } from "@/store/workbench-store";
 import { TaskDisplay } from "./task-display";
 import { ChatInterface } from "./chat-interface";
+import { ArtifactDisplay } from "./artifact-display";
 
 export function WorkbenchLayout() {
   const [userInput, setUserInput] = useState("");
-  const { 
-    addSystemLog, 
-    createTask, 
-    updateAgentStatus, 
-    transferTask, 
-    tasks, 
-    agents 
+  const {
+    addSystemLog,
+    createTask,
+    updateAgentStatus,
+    transferTask,
+    transferArtifact,
+    getArtifactsByAgent,
+    tasks,
+    agents,
   } = useWorkbenchStore();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -67,13 +70,13 @@ export function WorkbenchLayout() {
       // Auto-transfer to Analyst Agent after 2 seconds (simulating PM Agent processing)
       setTimeout(() => {
         transferTask(task.id, "analyst-agent");
-        
+
         // Update agent statuses
         updateAgentStatus("pm-agent", {
           status: "idle",
           currentTask: undefined,
         });
-        
+
         updateAgentStatus("analyst-agent", {
           status: "active",
           currentTask: task.title,
@@ -82,6 +85,22 @@ export function WorkbenchLayout() {
 
       setUserInput("");
     }
+  };
+
+  const handleArtifactTransfer = (artifactId: string) => {
+    // Transfer artifact from Analyst Agent to Design Agent
+    transferArtifact(artifactId, "design-agent");
+
+    // Update agent statuses
+    updateAgentStatus("analyst-agent", {
+      status: "idle",
+      currentTask: undefined,
+    });
+
+    updateAgentStatus("design-agent", {
+      status: "active",
+      currentTask: "Process requirements document",
+    });
   };
 
   const agentAreas = [
@@ -158,9 +177,9 @@ export function WorkbenchLayout() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {agentAreas.map((agent) => {
             const IconComponent = agent.icon;
-            const currentAgent = agents.find(a => a.id === agent.id);
+            const currentAgent = agents.find((a) => a.id === agent.id);
             const agentStatus = currentAgent?.status || "idle";
-            
+
             return (
               <Card
                 key={agent.id}
@@ -177,16 +196,24 @@ export function WorkbenchLayout() {
                     {agent.description}
                   </p>
                   <div className="flex items-center justify-center gap-2">
-                    <Activity className={`h-4 w-4 transition-all duration-300 ${
-                      agentStatus === 'active' ? 'text-green-500 animate-pulse' : 
-                      agentStatus === 'busy' ? 'text-orange-500 animate-spin' :
-                      'text-gray-400'
-                    }`} />
-                    <span className={`text-sm capitalize transition-all duration-300 ${
-                      agentStatus === 'active' ? 'text-green-600 font-medium' : 
-                      agentStatus === 'busy' ? 'text-orange-600 font-medium' :
-                      'text-gray-500'
-                    }`}>
+                    <Activity
+                      className={`h-4 w-4 transition-all duration-300 ${
+                        agentStatus === "active"
+                          ? "text-green-500 animate-pulse"
+                          : agentStatus === "busy"
+                          ? "text-orange-500 animate-spin"
+                          : "text-gray-400"
+                      }`}
+                    />
+                    <span
+                      className={`text-sm capitalize transition-all duration-300 ${
+                        agentStatus === "active"
+                          ? "text-green-600 font-medium"
+                          : agentStatus === "busy"
+                          ? "text-orange-600 font-medium"
+                          : "text-gray-500"
+                      }`}
+                    >
                       {agentStatus}
                     </span>
                     {currentAgent?.currentTask && (
@@ -195,21 +222,52 @@ export function WorkbenchLayout() {
                       </span>
                     )}
                   </div>
-                  <div className="min-h-24 bg-white rounded border border-gray-200 p-2">
-                    {agent.id === 'analyst-agent' && agentStatus === 'active' ? (
-                      <ChatInterface 
-                        agentId={agent.id} 
-                        isActive={agentStatus === 'active'} 
-                        currentTask={currentAgent?.currentTask}
-                      />
-                    ) : agent.id === 'analyst-agent' ? (
-                      <div className="text-sm text-gray-500 italic p-2 text-center">
-                        <div className="w-6 h-6 mx-auto mb-2 opacity-50">💬</div>
-                        Chat will activate when task is assigned
-                      </div>
-                    ) : (
-                      <TaskDisplay tasks={tasks} agentId={agent.id} />
-                    )}
+                  <div className="space-y-2">
+                    <div className="min-h-24 bg-white rounded border border-gray-200 p-2">
+                      {agent.id === "analyst-agent" &&
+                      agentStatus === "active" ? (
+                        <ChatInterface
+                          agentId={agent.id}
+                          isActive={agentStatus === "active"}
+                          currentTask={currentAgent?.currentTask}
+                        />
+                      ) : agent.id === "analyst-agent" ? (
+                        <div className="text-sm text-gray-500 italic p-2 text-center">
+                          <div className="w-6 h-6 mx-auto mb-2 opacity-50">
+                            💬
+                          </div>
+                          Chat will activate when task is assigned
+                        </div>
+                      ) : (
+                        <TaskDisplay tasks={tasks} agentId={agent.id} />
+                      )}
+                    </div>
+
+                    {/* Artifacts Section */}
+                    {(() => {
+                      const agentArtifacts = getArtifactsByAgent(agent.id);
+                      if (agentArtifacts.length > 0) {
+                        return (
+                          <div className="space-y-2">
+                            <h5 className="text-xs font-medium text-gray-600">
+                              Artifacts
+                            </h5>
+                            {agentArtifacts.map((artifact) => (
+                              <ArtifactDisplay
+                                key={artifact.id}
+                                artifact={artifact}
+                                onTransfer={
+                                  agent.id === "analyst-agent"
+                                    ? handleArtifactTransfer
+                                    : undefined
+                                }
+                              />
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </CardContent>
               </Card>
