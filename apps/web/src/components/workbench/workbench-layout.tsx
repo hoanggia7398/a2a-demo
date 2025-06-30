@@ -10,6 +10,7 @@ import {
   Send,
   ScrollText,
   Activity,
+  Crown,
 } from "lucide-react";
 import { useState } from "react";
 import { useWorkbenchStore, SystemLog } from "@/store/workbench-store";
@@ -33,6 +34,14 @@ export function WorkbenchLayout() {
   };
 
   const agentAreas = [
+    {
+      id: "orchestrator-agent",
+      name: "Orchestrator Agent",
+      icon: Crown,
+      description: "👑 Tác tử Điều phối - Coordination & Workflow Management",
+      status: "active",
+      color: "border-orange-200 bg-orange-50",
+    },
     {
       id: "pm-agent",
       name: "PM Agent",
@@ -95,7 +104,7 @@ export function WorkbenchLayout() {
         </Card>
 
         {/* Agent Areas Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {agentAreas.map((agent) => {
             const IconComponent = agent.icon;
             return (

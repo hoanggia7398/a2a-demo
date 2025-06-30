@@ -33,6 +33,11 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
   systemLogs: [],
   agents: [
     {
+      id: "orchestrator-agent",
+      name: "Orchestrator Agent",
+      status: "active",
+    },
+    {
       id: "pm-agent",
       name: "PM Agent",
       status: "idle",

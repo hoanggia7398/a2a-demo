@@ -10,7 +10,10 @@
 
 # next.js
 /.next/
+.next
 /out/
+*.hot-update.js
+*.hot-update.json
 
 # production
 /build
