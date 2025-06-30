@@ -11,6 +11,7 @@ import {
   ScrollText,
   Activity,
   Crown,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
 import { useWorkbenchStore, SystemLog } from "@/store/workbench-store";
@@ -27,6 +28,7 @@ export function WorkbenchLayout() {
     transferTask,
     transferArtifact,
     getArtifactsByAgent,
+    startDesignAgentProcessing,
     tasks,
     agents,
   } = useWorkbenchStore();
@@ -88,19 +90,23 @@ export function WorkbenchLayout() {
   };
 
   const handleArtifactTransfer = (artifactId: string) => {
+    // Get the artifact that's being transferred
+    const allArtifacts = useWorkbenchStore.getState().artifacts;
+    const artifact = allArtifacts.find((a) => a.id === artifactId);
+
+    if (!artifact) return;
+
     // Transfer artifact from Analyst Agent to Design Agent
     transferArtifact(artifactId, "design-agent");
 
-    // Update agent statuses
+    // Update Analyst Agent status
     updateAgentStatus("analyst-agent", {
       status: "idle",
       currentTask: undefined,
     });
 
-    updateAgentStatus("design-agent", {
-      status: "active",
-      currentTask: "Process requirements document",
-    });
+    // Story 1.4: Trigger Design Agent autonomous processing
+    startDesignAgentProcessing(artifact);
   };
 
   const agentAreas = [
@@ -237,6 +243,19 @@ export function WorkbenchLayout() {
                             💬
                           </div>
                           Chat will activate when task is assigned
+                        </div>
+                      ) : agent.id === "design-agent" &&
+                        agentStatus === "busy" ? (
+                        // Story 1.4: Design Agent Processing State
+                        <div className="text-sm text-blue-600 p-2 text-center">
+                          <div className="flex items-center justify-center space-x-2 mb-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="font-medium">Processing...</span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Design Agent is autonomously working on received
+                            artifact
+                          </div>
                         </div>
                       ) : (
                         <TaskDisplay tasks={tasks} agentId={agent.id} />
