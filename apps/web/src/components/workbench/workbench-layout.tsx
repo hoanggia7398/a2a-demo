@@ -18,6 +18,9 @@ import { useWorkbenchStore, SystemLog } from "@/store/workbench-store";
 import { TaskDisplay } from "./task-display";
 import { ChatInterface } from "./chat-interface";
 import { ArtifactDisplay } from "./artifact-display";
+import { OrchestratorDelegation } from "./orchestrator-delegation";
+import { ResultSynthesizer } from "./result-synthesizer";
+import { OrchestratorChat } from "./orchestrator-chat";
 
 export function WorkbenchLayout() {
   const [userInput, setUserInput] = useState("");
@@ -209,39 +212,8 @@ export function WorkbenchLayout() {
                   <div className="space-y-2">
                     <div className="min-h-24 bg-white rounded border border-gray-200 p-2">
                       {agent.id === "orchestrator-agent" ? (
-                        // Story 1.5: Orchestrator delegation status display
-                        <div className="text-sm p-2">
-                          {delegationWorkflows.length > 0 ? (
-                            <div className="space-y-2">
-                              {delegationWorkflows
-                                .filter((w) => w.status === "active")
-                                .map((workflow) => (
-                                  <div
-                                    key={workflow.id}
-                                    className="bg-orange-50 border border-orange-200 rounded p-2"
-                                  >
-                                    <div className="font-medium text-orange-800 text-xs">
-                                      Active Workflow: {workflow.requestType}
-                                    </div>
-                                    <div className="text-xs text-orange-600 mt-1">
-                                      Step {workflow.currentStep} of{" "}
-                                      {workflow.agentSequence.length}
-                                    </div>
-                                    <div className="text-xs text-gray-600 mt-1">
-                                      &quot;{workflow.userRequest}&quot;
-                                    </div>
-                                  </div>
-                                ))}
-                            </div>
-                          ) : (
-                            <div className="text-center text-gray-500 italic">
-                              <div className="w-6 h-6 mx-auto mb-2 opacity-50">
-                                👑
-                              </div>
-                              Ready to orchestrate workflows
-                            </div>
-                          )}
-                        </div>
+                        // Story 1.5: Orchestrator chat interface
+                        <OrchestratorChat />
                       ) : agent.id === "analyst-agent" &&
                         agentStatus === "active" &&
                         !isOrchestratorMode ? (
@@ -333,6 +305,14 @@ export function WorkbenchLayout() {
           })}
         </div>
 
+        {/* Story 1.5: Orchestrator Delegation Visualization */}
+        {isOrchestratorMode && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <OrchestratorDelegation />
+            <ResultSynthesizer />
+          </div>
+        )}
+
         {/* System Event Log */}
         <Card className="border-gray-300">
           <CardHeader>
@@ -380,10 +360,12 @@ function SystemEventLog() {
                       ? "bg-blue-100 text-blue-700"
                       : log.type === "agent_message"
                       ? "bg-green-100 text-green-700"
+                      : log.type === "delegation"
+                      ? "bg-orange-100 text-orange-700"
                       : "bg-gray-100 text-gray-700"
                   }`}
                 >
-                  {log.type}
+                  {log.type.replace("_", " ")}
                 </span>
               </div>
               <p className="text-sm text-gray-700">{log.message}</p>

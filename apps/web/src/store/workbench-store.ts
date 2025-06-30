@@ -679,7 +679,7 @@ WorkbenchLayout
   },
 
   synthesizeWorkflowResults: (workflowId: string) => {
-    const { addSystemLog, updateAgentStatus } = get();
+    const { addSystemLog, updateAgentStatus, addMessage } = get();
     const state = get();
 
     const workflow = state.delegationWorkflows.find((w) => w.id === workflowId);
@@ -706,6 +706,62 @@ WorkbenchLayout
     const artifacts = state.artifacts.filter((a) =>
       completedTasks.some((t) => t.toAgent === a.creator)
     );
+
+    // Create synthesis message from orchestrator
+    const workflowDuration =
+      workflow.endTime && workflow.startTime
+        ? Math.round(
+            (workflow.endTime.getTime() - workflow.startTime.getTime()) / 1000
+          )
+        : 0;
+
+    const synthesisMessage = `## Workflow Complete: ${workflow.requestType
+      .replace("_", " ")
+      .toUpperCase()}
+
+### Specialist Agents Involved:
+${completedTasks
+  .map(
+    (task) =>
+      `- ${task.toAgent
+        .replace("-agent", "")
+        .replace(/\b\w/g, (l) => l.toUpperCase())} Agent: Task completed ✅`
+  )
+  .join("\n")}
+
+### Generated Artifacts:
+${artifacts
+  .map(
+    (artifact) =>
+      `- **${artifact.name}** - ${artifact.type} created by ${artifact.creator
+        .replace("-agent", "")
+        .replace(/\b\w/g, (l) => l.toUpperCase())} Agent`
+  )
+  .join("\n")}
+
+### Summary:
+Successfully completed ${workflow.requestType.replace(
+      "_",
+      " "
+    )} workflow through ${
+      completedTasks.length
+    }-agent collaboration, producing ${
+      artifacts.length
+    } comprehensive artifacts in ${workflowDuration} seconds.
+
+### Recommended Next Steps:
+- Review and validate generated artifacts
+- Plan implementation approach based on deliverables
+- Coordinate with team members for next phase
+- Begin development based on specifications
+
+*Workflow orchestrated and synthesized by Orchestrator Agent*`;
+
+    // Add orchestrator synthesis message
+    addMessage({
+      sender: "orchestrator-agent",
+      content: synthesisMessage,
+    });
 
     // Log synthesis
     addSystemLog({
