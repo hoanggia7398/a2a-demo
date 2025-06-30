@@ -16,12 +16,12 @@ Dự án "Agent Flow" ra đời nhằm giải quyết những thách thức tron
 
 #### **Yêu cầu Chức năng (Functional)**
 
-- **FR1:** Hệ thống phải cung cấp một giao diện trò chuyện (chat) để người dùng có thể tương tác (gửi/nhận tin nhắn) với tác tử AI.
-- **FR2:** Tác tử AI phải có khả năng dẫn dắt người dùng thông qua một chuỗi các câu hỏi có cấu trúc để thu thập thông tin **nhằm hoàn thành một loại tài liệu cụ thể (ví dụ: Bản tóm tắt dự án).**
-- **FR3:** Hệ thống phải **cập nhật và hiển thị lại** tài liệu (dạng markdown) sau mỗi lần người dùng trả lời một câu hỏi của tác tử.
-- **FR4:** Giao diện phải có một khu vực log hoặc chỉ báo trực quan để mô phỏng các thông điệp và hiện vật (artifacts) đang được trao đổi theo giao thức A2A.
+- **FR1:** Hệ thống phải cung cấp một giao diện trò chuyện (chat) tập trung để người dùng **chỉ tương tác với Tác tử Điều phối (Orchestrator Agent)**, không trực tiếp giao tiếp với các tác tử chuyên biệt khác.
+- **FR2:** Tác tử Điều phối phải có khả năng **tự động phân tích yêu cầu của người dùng** và **giao nhiệm vụ** (delegate tasks) cho các tác tử chuyên biệt phù hợp (PM, Analyst, Design) thông qua giao thức A2A.
+- **FR3:** Hệ thống phải hiển thị **trực quan quá trình A2A** giữa Orchestrator và các tác tử chuyên biệt, bao gồm việc giao task, trao đổi artifacts, và báo cáo kết quả.
+- **FR4:** Giao diện phải có một khu vực log hoặc chỉ báo trực quan để hiển thị **toàn bộ luốn A2A communication** giữa Orchestrator và các tác tử chuyên biệt.
 - **FR5:** **Khi người dùng nhấp vào avatar hoặc tên của tác tử,** hệ thống phải hiển thị "Thẻ Tác tử" (Agent Card), bao gồm các thông tin chuẩn hóa như khả năng, nhà cung cấp và URL.
-- **FR6:** Hệ thống phải cho phép người dùng (hoặc quản trị viên) có khả năng nạp (load) hoặc thay đổi prompt/hướng dẫn lõi cho tác tử AI một cách linh hoạt, cho phép thay đổi hành vi hoặc vai trò của tác tử.
+- **FR6:** Orchestrator Agent phải có khả năng **tổng hợp kết quả** từ các tác tử chuyên biệt và **trình bày lại cho người dùng** dưới dạng thống nhất và dễ hiểu.
 
 #### **Yêu cầu Phi chức năng (Non-Functional)**
 
@@ -30,7 +30,9 @@ Dự án "Agent Flow" ra đời nhằm giải quyết những thách thức tron
 
 ### **Technical Assumptions (Các giả định về Kỹ thuật)**
 
-- **Mô hình Tương tác Tác tử (Agent Interaction Model):** Hệ thống sẽ được xây dựng theo kiến trúc **Tập trung (Phân cấp - Hierarchical)**. Sẽ có một tác tử chính ("lãnh đạo" hoặc "giám sát") chịu trách nhiệm lập kế hoạch, điều phối và giao nhiệm vụ cho các tác tử chuyên biệt khác ("cấp dưới" hoặc "công nhân").
+- **Mô hình Tương tác Tác tử (Agent Interaction Model):** Hệ thống sẽ được xây dựng theo kiến trúc **Tập trung với Orchestrator** (Centralized Orchestration). Sẽ có **một điểm tương tác duy nhất** với người dùng thông qua Orchestrator Agent, sau đó Orchestrator sẽ tự động điều phối và giao nhiệm vụ cho các tác tử chuyên biệt khác (PM, Analyst, Design) thông qua **True A2A Communication**.
+- **Transparency Model:** Người dùng sẽ có thể **quan sát** quá trình A2A diễn ra nhưng **không can thiệp trực tiếp** vào giao tiếp giữa các tác tử chuyên biệt.
+- **Orchestrator Intelligence:** Orchestrator Agent phải có khả năng **phân tích ngữ cảnh** yêu cầu của người dùng và **tự động quyết định** workflow phù hợp cũng như thứ tự giao nhiệm vụ cho các tác tử.
 
 ### **Epics và User Stories**
 
@@ -48,33 +50,35 @@ Dự án "Agent Flow" ra đời nhằm giải quyết những thách thức tron
   2.  Có một khu vực chung để hiển thị log hoặc dòng chảy sự kiện của toàn hệ thống.
   3.  Giao diện có một nút hoặc ô nhập liệu ban đầu để người dùng khởi tạo một yêu cầu.
 
-#### **Story 1.2: Bắt đầu Tương tác với Tác tử Phân tích (Analyst Agent)**
+#### **Story 1.2: Tương tác Tập trung với Orchestrator Agent**
 
 - **As a** user,
-- **I want** to input a high-level request and see it being assigned to the Analyst Agent to start the conversation,
-- **so that** I can begin the requirement clarification process.
+- **I want** to input requests directly to the Orchestrator Agent and see it automatically delegate tasks to specialist agents,
+- **so that** I can experience seamless A2A workflow coordination without managing multiple conversations.
 - **Acceptance Criteria:**
-  1.  Khi người dùng nhập yêu cầu và gửi đi, một "Tác vụ" mới sẽ xuất hiện trong khu vực của Tác tử Quản lý Dự án (PM Agent).
-  2.  Hệ thống hiển thị trực quan việc Tác vụ này được chuyển từ PM Agent sang Analyst Agent.
-  3.  Khu vực chat của Analyst Agent trở nên hoạt động, và tác tử này sẽ gửi tin nhắn đầu tiên để bắt đầu làm rõ yêu cầu với người dùng.
+  1.  Người dùng chỉ tương tác với Orchestrator Agent thông qua một giao diện chat duy nhất.
+  2.  Orchestrator tự động phân tích yêu cầu và giao nhiệm vụ cho PM Agent, sau đó chuyển đến Analyst Agent.
+  3.  Hệ thống hiển thị trực quan quá trình A2A delegation và task transfer giữa các agent.
+  4.  Orchestrator cung cấp feedback cho người dùng về tiến trình và kết quả của các tác tử chuyên biệt.
 
-#### **Story 1.3: Trực quan hóa Luồng giao tiếp A2A và Hiện vật (Artifact)**
+#### **Story 1.3: Trực quan hóa Luồng A2A Tự động và Artifact Generation**
 
 - **As a** user,
-- **I want** to see a visual representation of the Analyst Agent creating and handing off a document artifact to the Design Agent,
-- **so that** I can understand the A2A collaboration process.
+- **I want** to see the Orchestrator Agent automatically coordinate with Analyst Agent to gather requirements and generate artifacts without my direct intervention,
+- **so that** I can witness true autonomous A2A collaboration.
 - **Acceptance Criteria:**
-  1.  Sau khi cuộc trò chuyện với người dùng kết thúc, Analyst Agent tạo ra một "Hiện vật" (Artifact) là một tài liệu markdown.
-  2.  Hiện vật này xuất hiện trong khu vực của Analyst Agent.
-  3.  Hệ thống hiển thị trực quan việc Hiện vật được gửi từ Analyst Agent sang Design Agent.
-  4.  Khu vực log chung ghi lại sự kiện: `Analyst_Agent --> SENT_ARTIFACT (requirements.md) --> Design_Agent`.
+  1.  Orchestrator tự động giao nhiệm vụ requirements gathering cho Analyst Agent.
+  2.  Analyst Agent tự động thực hiện phân tích và tạo ra artifacts (requirements.md) mà không cần tương tác trực tiếp với người dùng.
+  3.  Hệ thống hiển thị trực quan việc artifact được tự động transfer từ Analyst sang Design Agent.
+  4.  Khu vực log ghi lại đầy đủ quá trình A2A: `Orchestrator --> DELEGATE_TASK --> Analyst_Agent --> SENT_ARTIFACT (requirements.md) --> Design_Agent`.
 
-#### **Story 1.4: Tác tử Tự trị Hoạt động và Tạo Kết quả**
+#### **Story 1.4: Orchestrator Synthesis và Final Results**
 
 - **As a** user,
-- **I want** to see the Design Agent autonomously work on the received artifact and produce its own output,
-- **so that** I can witness the power of specialized, independent agents.
+- **I want** to see the Orchestrator Agent collect results from all specialist agents and present a unified final output,
+- **so that** I receive a comprehensive solution without needing to understand the internal A2A processes.
 - **Acceptance Criteria:**
-  1.  Sau khi nhận hiện vật, khu vực của Design Agent hiển thị trạng thái "đang xử lý" (ví dụ: loading spinner).
-  2.  Sau một khoảng thời gian ngắn, Design Agent tạo ra một hiện vật mới (ví dụ: một file ảnh sơ đồ kiến trúc).
-  3.  Hiện vật mới này xuất hiện trong khu vực của Design Agent.
+  1.  Orchestrator tự động thu thập tất cả artifacts từ Analyst và Design Agents.
+  2.  Orchestrator tổng hợp và trình bày kết quả cuối cùng cho người dùng trong chat interface.
+  3.  Người dùng có thể download hoặc view tất cả artifacts được tạo ra trong quá trình A2A.
+  4.  Orchestrator cung cấp summary về toàn bộ workflow đã thực hiện.

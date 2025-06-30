@@ -12,22 +12,34 @@ Dự án "Agent Flow" sẽ được phát triển dưới dạng một ứng d�
 ```mermaid
 graph TD
     subgraph "Môi trường Local"
-        User["👨‍💻 Người dùng (Bạn)"]
+        User["👨‍💻 Người dùng"]
         Browser["🌐 Trình duyệt"]
         Backend["💻 Backend Server (Node.js/TypeScript)"]
 
-        subgraph Backend
-            Orchestrator["👑 Tác tử Điều phối (Orchestrator)"]
-            Analyst["📊 Tác tử Phân tích (Analyst)"]
-            Designer["🎨 Tác tử Thiết kế (Designer)"]
-
-            Orchestrator -- Giao nhiệm vụ (A2A) --> Analyst
-            Orchestrator -- Giao nhiệm vụ (A2A) --> Designer
+        subgraph "Frontend - Single Chat Interface"
+            OrchestratorUI["👑 Orchestrator Chat Interface"]
+            VisualWorkflow["📊 Visual A2A Workflow Display"]
         end
 
-        User -- Tương tác --> Browser
-        Browser -- Yêu cầu HTTP --> Backend
-        Backend -- Giao tiếp (A2A) --> Analyst
+        subgraph "Backend - True A2A System"
+            Orchestrator["👑 Orchestrator Agent"]
+            PM["📋 PM Agent"]
+            Analyst["📊 Analyst Agent"]
+            Designer["🎨 Design Agent"]
+
+            Orchestrator -- "A2A: DELEGATE_TASK" --> PM
+            Orchestrator -- "A2A: DELEGATE_TASK" --> Analyst
+            Orchestrator -- "A2A: DELEGATE_TASK" --> Designer
+            PM -- "A2A: RETURN_RESULT" --> Orchestrator
+            Analyst -- "A2A: SEND_ARTIFACT" --> Designer
+            Analyst -- "A2A: RETURN_RESULT" --> Orchestrator
+            Designer -- "A2A: RETURN_RESULT" --> Orchestrator
+        end
+
+        User -- "Single Conversation" --> OrchestratorUI
+        User -- "Observes A2A" --> VisualWorkflow
+        OrchestratorUI -- "HTTP Requests" --> Orchestrator
+        Backend -- "A2A Events" --> VisualWorkflow
     end
 ```
 ````
@@ -35,7 +47,10 @@ graph TD
 #### **Các Mẫu Kiến trúc (Architectural Patterns)**
 
 - **Monorepo:** Sử dụng một kho chứa code duy nhất để quản lý cả frontend, backend và các thư viện chia sẻ, giúp đồng bộ và nhất quán.
-- **Hệ thống Đa Tác tử Phân cấp (Hierarchical MAS):** Một tác tử chính ("Orchestrator") sẽ quản lý và điều phối luồng công việc của các tác tử chuyên môn khác.
+- **Centralized Orchestration Pattern:** Một Orchestrator Agent duy nhất làm điểm tương tác với người dùng và tự động điều phối toàn bộ workflow với các specialist agents thông qua True A2A Communication.
+- **Observer Pattern cho A2A Transparency:** Người dùng có thể quan sát nhưng không can thiệp vào quá trình A2A giữa các agents.
+- **Delegation Pattern:** Orchestrator phân tích requests và tự động giao nhiệm vụ cho appropriate specialist agents.
+- **Result Synthesis Pattern:** Orchestrator tự động thu thập và tổng hợp kết quả từ tất cả specialist agents trước khi trình bày cho người dùng.
 - **Server-Side Rendering (SSR) với Next.js:** Tận dụng khả năng của Next.js để có cấu trúc dự án rõ ràng.
 - **Sử dụng mẫu `AgentExecutor`:** Đóng gói logic cốt lõi của mỗi tác tử vào một `class` riêng biệt theo mẫu `AgentExecutor` từ `A2A-JS SDK`.
 
