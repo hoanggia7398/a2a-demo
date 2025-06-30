@@ -23,67 +23,35 @@ export function WorkbenchLayout() {
   const [userInput, setUserInput] = useState("");
   const {
     addSystemLog,
-    createTask,
+    processUserRequest,
+    isOrchestratorMode,
     updateAgentStatus,
-    transferTask,
     transferArtifact,
     getArtifactsByAgent,
     startDesignAgentProcessing,
     tasks,
     agents,
+    delegationWorkflows,
   } = useWorkbenchStore();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (userInput.trim()) {
-      // Log user input
-      addSystemLog({
-        id: Date.now().toString(),
-        timestamp: new Date(),
-        message: `User initiated request: ${userInput}`,
-        type: "user_input",
-        source: "user",
-      });
-
-      // Create task for PM Agent
-      const task = createTask({
-        title: userInput,
-        status: "pending",
-        assigner: "user",
-        assignee: "pm-agent",
-      });
-
-      // Update PM Agent status
-      updateAgentStatus("pm-agent", {
-        status: "active",
-        currentTask: task.title,
-      });
-
-      // Log task creation
-      addSystemLog({
-        id: `task-${Date.now()}`,
-        timestamp: new Date(),
-        message: `Task created: "${task.title}" assigned to PM Agent`,
-        type: "system_event",
-        source: "system",
-        metadata: { taskId: task.id },
-      });
-
-      // Auto-transfer to Analyst Agent after 2 seconds (simulating PM Agent processing)
-      setTimeout(() => {
-        transferTask(task.id, "analyst-agent");
-
-        // Update agent statuses
-        updateAgentStatus("pm-agent", {
-          status: "idle",
-          currentTask: undefined,
+      if (isOrchestratorMode) {
+        // Story 1.5: Use orchestrator delegation
+        processUserRequest(userInput);
+      } else {
+        // Legacy direct assignment (for backward compatibility)
+        addSystemLog({
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          message: `User initiated request: ${userInput}`,
+          type: "user_input",
+          source: "user",
         });
 
-        updateAgentStatus("analyst-agent", {
-          status: "active",
-          currentTask: task.title,
-        });
-      }, 2000);
+        // Legacy PM Agent task creation would go here
+      }
 
       setUserInput("");
     }
@@ -152,7 +120,17 @@ export function WorkbenchLayout() {
           <h1 className="text-3xl font-bold text-gray-900">
             Digital Workbench
           </h1>
-          <p className="text-gray-600">Multi-Agent Collaboration Platform</p>
+          <p className="text-gray-600">
+            {isOrchestratorMode
+              ? "🎭 Orchestrator-Managed Multi-Agent Platform"
+              : "Multi-Agent Collaboration Platform"}
+          </p>
+          {isOrchestratorMode && (
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+              <Crown className="h-4 w-4" />
+              Orchestrator Mode Active
+            </div>
+          )}
         </div>
 
         {/* User Input Section */}
@@ -230,14 +208,51 @@ export function WorkbenchLayout() {
                   </div>
                   <div className="space-y-2">
                     <div className="min-h-24 bg-white rounded border border-gray-200 p-2">
-                      {agent.id === "analyst-agent" &&
-                      agentStatus === "active" ? (
+                      {agent.id === "orchestrator-agent" ? (
+                        // Story 1.5: Orchestrator delegation status display
+                        <div className="text-sm p-2">
+                          {delegationWorkflows.length > 0 ? (
+                            <div className="space-y-2">
+                              {delegationWorkflows
+                                .filter((w) => w.status === "active")
+                                .map((workflow) => (
+                                  <div
+                                    key={workflow.id}
+                                    className="bg-orange-50 border border-orange-200 rounded p-2"
+                                  >
+                                    <div className="font-medium text-orange-800 text-xs">
+                                      Active Workflow: {workflow.requestType}
+                                    </div>
+                                    <div className="text-xs text-orange-600 mt-1">
+                                      Step {workflow.currentStep} of{" "}
+                                      {workflow.agentSequence.length}
+                                    </div>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                      &quot;{workflow.userRequest}&quot;
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          ) : (
+                            <div className="text-center text-gray-500 italic">
+                              <div className="w-6 h-6 mx-auto mb-2 opacity-50">
+                                👑
+                              </div>
+                              Ready to orchestrate workflows
+                            </div>
+                          )}
+                        </div>
+                      ) : agent.id === "analyst-agent" &&
+                        agentStatus === "active" &&
+                        !isOrchestratorMode ? (
+                        // Legacy chat interface (only if orchestrator mode is disabled)
                         <ChatInterface
                           agentId={agent.id}
                           isActive={agentStatus === "active"}
                           currentTask={currentAgent?.currentTask}
                         />
-                      ) : agent.id === "analyst-agent" ? (
+                      ) : agent.id === "analyst-agent" &&
+                        !isOrchestratorMode ? (
                         <div className="text-sm text-gray-500 italic p-2 text-center">
                           <div className="w-6 h-6 mx-auto mb-2 opacity-50">
                             💬
@@ -253,9 +268,33 @@ export function WorkbenchLayout() {
                             <span className="font-medium">Processing...</span>
                           </div>
                           <div className="text-xs text-gray-500">
-                            Design Agent is autonomously working on received
-                            artifact
+                            {isOrchestratorMode
+                              ? "Agent working on delegated task"
+                              : "Design Agent is autonomously working on received artifact"}
                           </div>
+                        </div>
+                      ) : isOrchestratorMode &&
+                        agent.id !== "orchestrator-agent" ? (
+                        // Story 1.5: Show agent status in orchestrator mode
+                        <div className="text-sm p-2 text-center">
+                          {agentStatus === "busy" ? (
+                            <div className="text-blue-600">
+                              <div className="flex items-center justify-center space-x-2 mb-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span className="font-medium">Working...</span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Processing delegated task
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-gray-500 italic">
+                              <div className="w-6 h-6 mx-auto mb-2 opacity-50">
+                                🤖
+                              </div>
+                              Waiting for delegation
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <TaskDisplay tasks={tasks} agentId={agent.id} />

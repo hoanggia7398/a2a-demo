@@ -100,7 +100,7 @@ export interface DelegatedTask {
 
 export interface TaskPayload {
   userRequest: string;
-  context?: unknown;
+  context?: any;
   expectedOutput: ArtifactType;
   priority: Priority;
 }
@@ -508,7 +508,12 @@ WorkbenchLayout
 
   // Story 1.5: Orchestrator Delegation Actions
   processUserRequest: (userRequest: string) => {
-    const { addSystemLog, classifyRequest, updateAgentStatus } = get();
+    const {
+      addSystemLog,
+      classifyRequest,
+      delegateToAgent,
+      updateAgentStatus,
+    } = get();
 
     // Log user request
     addSystemLog({

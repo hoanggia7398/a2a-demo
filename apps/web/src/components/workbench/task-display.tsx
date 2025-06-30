@@ -8,6 +8,7 @@ import {
   AlertCircle,
   XCircle,
   ArrowRight,
+  Crown,
 } from "lucide-react";
 import { Task, TaskStatus } from "@/store/workbench-store";
 
@@ -35,6 +36,12 @@ const statusConfig: Record<
     color: "bg-blue-100 text-blue-800 border-blue-300",
     icon: AlertCircle,
     label: "In Progress",
+    animate: true,
+  },
+  delegated: {
+    color: "bg-orange-100 text-orange-800 border-orange-300",
+    icon: Crown,
+    label: "Delegated",
     animate: true,
   },
   completed: {
