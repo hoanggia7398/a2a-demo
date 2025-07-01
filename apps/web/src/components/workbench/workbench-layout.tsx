@@ -12,6 +12,9 @@ import {
   Activity,
   Crown,
   Loader2,
+  ChevronDown,
+  ChevronUp,
+  Eye,
 } from "lucide-react";
 import { useState } from "react";
 import { useWorkbenchStore, SystemLog } from "@/store/workbench-store";
@@ -24,6 +27,7 @@ import { OrchestratorChat } from "./orchestrator-chat";
 
 export function WorkbenchLayout() {
   const [userInput, setUserInput] = useState("");
+  const [isExpandedView, setIsExpandedView] = useState(false);
   const {
     addSystemLog,
     processUserRequest,
@@ -34,7 +38,6 @@ export function WorkbenchLayout() {
     startDesignAgentProcessing,
     tasks,
     agents,
-    delegationWorkflows,
   } = useWorkbenchStore();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -160,153 +163,385 @@ export function WorkbenchLayout() {
           </CardContent>
         </Card>
 
-        {/* Agent Areas Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {agentAreas.map((agent) => {
-            const IconComponent = agent.icon;
-            const currentAgent = agents.find((a) => a.id === agent.id);
-            const agentStatus = currentAgent?.status || "idle";
-
-            return (
-              <Card
-                key={agent.id}
-                className={`${agent.color} border-2 transition-all hover:shadow-md`}
-              >
-                <CardHeader className="text-center">
-                  <div className="mx-auto w-12 h-12 rounded-full bg-white flex items-center justify-center mb-2">
-                    <IconComponent className="h-6 w-6 text-gray-700" />
-                  </div>
-                  <CardTitle className="text-lg">{agent.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-gray-600 text-center">
-                    {agent.description}
-                  </p>
-                  <div className="flex items-center justify-center gap-2">
-                    <Activity
-                      className={`h-4 w-4 transition-all duration-300 ${
-                        agentStatus === "active"
-                          ? "text-green-500 animate-pulse"
-                          : agentStatus === "busy"
-                          ? "text-orange-500 animate-spin"
-                          : "text-gray-400"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm capitalize transition-all duration-300 ${
-                        agentStatus === "active"
-                          ? "text-green-600 font-medium"
-                          : agentStatus === "busy"
-                          ? "text-orange-600 font-medium"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      {agentStatus}
-                    </span>
-                    {currentAgent?.currentTask && (
-                      <span className="text-xs text-gray-500 truncate ml-2">
-                        • {currentAgent.currentTask}
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <div className="min-h-24 bg-white rounded border border-gray-200 p-2">
-                      {agent.id === "orchestrator-agent" ? (
-                        // Story 1.5: Orchestrator chat interface
-                        <OrchestratorChat />
-                      ) : agent.id === "analyst-agent" &&
-                        agentStatus === "active" &&
-                        !isOrchestratorMode ? (
-                        // Legacy chat interface (only if orchestrator mode is disabled)
-                        <ChatInterface
-                          agentId={agent.id}
-                          isActive={agentStatus === "active"}
-                          currentTask={currentAgent?.currentTask}
-                        />
-                      ) : agent.id === "analyst-agent" &&
-                        !isOrchestratorMode ? (
-                        <div className="text-sm text-gray-500 italic p-2 text-center">
-                          <div className="w-6 h-6 mx-auto mb-2 opacity-50">
-                            💬
-                          </div>
-                          Chat will activate when task is assigned
-                        </div>
-                      ) : agent.id === "design-agent" &&
-                        agentStatus === "busy" ? (
-                        // Story 1.4: Design Agent Processing State
-                        <div className="text-sm text-blue-600 p-2 text-center">
-                          <div className="flex items-center justify-center space-x-2 mb-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span className="font-medium">Processing...</span>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {isOrchestratorMode
-                              ? "Agent working on delegated task"
-                              : "Design Agent is autonomously working on received artifact"}
-                          </div>
-                        </div>
-                      ) : isOrchestratorMode &&
-                        agent.id !== "orchestrator-agent" ? (
-                        // Story 1.5: Show agent status in orchestrator mode
-                        <div className="text-sm p-2 text-center">
-                          {agentStatus === "busy" ? (
-                            <div className="text-blue-600">
-                              <div className="flex items-center justify-center space-x-2 mb-2">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span className="font-medium">Working...</span>
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                Processing delegated task
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-gray-500 italic">
-                              <div className="w-6 h-6 mx-auto mb-2 opacity-50">
-                                🤖
-                              </div>
-                              Waiting for delegation
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <TaskDisplay tasks={tasks} agentId={agent.id} />
-                      )}
-                    </div>
-
-                    {/* Artifacts Section */}
-                    {(() => {
-                      const agentArtifacts = getArtifactsByAgent(agent.id);
-                      if (agentArtifacts.length > 0) {
-                        return (
-                          <div className="space-y-2">
-                            <h5 className="text-xs font-medium text-gray-600">
-                              Artifacts
-                            </h5>
-                            {agentArtifacts.map((artifact) => (
-                              <ArtifactDisplay
-                                key={artifact.id}
-                                artifact={artifact}
-                                onTransfer={
-                                  agent.id === "analyst-agent"
-                                    ? handleArtifactTransfer
-                                    : undefined
-                                }
-                              />
-                            ))}
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        {/* CEO View Toggle */}
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => setIsExpandedView(!isExpandedView)}
+            className="flex items-center gap-2"
+          >
+            <Eye className="h-4 w-4" />
+            {isExpandedView ? "CEO Overview" : "Detailed View"}
+            {isExpandedView ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
         </div>
 
+        {/* CEO Simple Overview */}
+        {!isExpandedView ? (
+          <div className="space-y-6">
+            {/* Organizational Chart */}
+            <Card className="border-2 border-gray-300 bg-gradient-to-r from-gray-50 to-blue-50">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl text-gray-800">
+                  Organizational Structure
+                </CardTitle>
+                <p className="text-gray-600">Multi-Agent System Overview</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-8">
+                  {/* Orchestrator at Top */}
+                  <div className="flex justify-center">
+                    <div className="bg-orange-100 border-2 border-orange-300 rounded-lg p-4 text-center min-w-48">
+                      <div className="mx-auto w-12 h-12 rounded-full bg-orange-200 flex items-center justify-center mb-2">
+                        <Crown className="h-6 w-6 text-orange-700" />
+                      </div>
+                      <h3 className="font-semibold text-orange-800">
+                        Orchestrator Agent
+                      </h3>
+                      <div className="flex items-center justify-center gap-2 mt-2">
+                        <Activity
+                          className={`h-3 w-3 ${
+                            agents.find((a) => a.id === "orchestrator-agent")
+                              ?.status === "active"
+                              ? "text-green-500 animate-pulse"
+                              : "text-gray-400"
+                          }`}
+                        />
+                        <span className="text-xs capitalize">
+                          {agents.find((a) => a.id === "orchestrator-agent")
+                            ?.status || "idle"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Connecting Line */}
+                  <div className="flex justify-center">
+                    <div className="w-px h-8 bg-gray-300"></div>
+                  </div>
+
+                  {/* Sub Agents */}
+                  <div className="grid grid-cols-3 gap-4">
+                    {agentAreas
+                      .filter((agent) => agent.id !== "orchestrator-agent")
+                      .map((agent) => {
+                        const IconComponent = agent.icon;
+                        const currentAgent = agents.find(
+                          (a) => a.id === agent.id
+                        );
+                        const agentStatus = currentAgent?.status || "idle";
+
+                        return (
+                          <div key={agent.id} className="text-center">
+                            <div
+                              className={`${agent.color} border-2 rounded-lg p-3`}
+                            >
+                              <div className="mx-auto w-10 h-10 rounded-full bg-white flex items-center justify-center mb-2">
+                                <IconComponent className="h-5 w-5 text-gray-700" />
+                              </div>
+                              <h4 className="font-medium text-sm">
+                                {agent.name}
+                              </h4>
+                              <div className="flex items-center justify-center gap-1 mt-1">
+                                <Activity
+                                  className={`h-3 w-3 ${
+                                    agentStatus === "active"
+                                      ? "text-green-500 animate-pulse"
+                                      : agentStatus === "busy"
+                                      ? "text-orange-500 animate-spin"
+                                      : "text-gray-400"
+                                  }`}
+                                />
+                                <span className="text-xs capitalize">
+                                  {agentStatus}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="text-center">
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {agents.filter((a) => a.status === "active").length}
+                  </div>
+                  <div className="text-sm text-gray-600">Active Agents</div>
+                </CardContent>
+              </Card>
+              <Card className="text-center">
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {agents.filter((a) => a.status === "busy").length}
+                  </div>
+                  <div className="text-sm text-gray-600">Working Agents</div>
+                </CardContent>
+              </Card>
+              <Card className="text-center">
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-green-600">
+                    {tasks.length}
+                  </div>
+                  <div className="text-sm text-gray-600">Total Tasks</div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : (
+          // Detailed View
+          <div className="space-y-6">
+            {/* Orchestrator Agent - Top Section */}
+            {(() => {
+              const orchestratorAgent = agentAreas.find(
+                (agent) => agent.id === "orchestrator-agent"
+              );
+              if (!orchestratorAgent) return null;
+
+              const IconComponent = orchestratorAgent.icon;
+              const currentAgent = agents.find(
+                (a) => a.id === orchestratorAgent.id
+              );
+              const agentStatus = currentAgent?.status || "idle";
+
+              return (
+                <Card
+                  className={`${orchestratorAgent.color} border-2 transition-all hover:shadow-md max-w-2xl mx-auto`}
+                >
+                  <CardHeader className="text-center">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-white flex items-center justify-center mb-2">
+                      <IconComponent className="h-8 w-8 text-gray-700" />
+                    </div>
+                    <CardTitle className="text-xl">
+                      {orchestratorAgent.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-gray-600 text-center">
+                      {orchestratorAgent.description}
+                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      <Activity
+                        className={`h-4 w-4 transition-all duration-300 ${
+                          agentStatus === "active"
+                            ? "text-green-500 animate-pulse"
+                            : agentStatus === "busy"
+                            ? "text-orange-500 animate-spin"
+                            : "text-gray-400"
+                        }`}
+                      />
+                      <span
+                        className={`text-sm capitalize transition-all duration-300 ${
+                          agentStatus === "active"
+                            ? "text-green-600 font-medium"
+                            : agentStatus === "busy"
+                            ? "text-orange-600 font-medium"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {agentStatus}
+                      </span>
+                      {currentAgent?.currentTask && (
+                        <span className="text-xs text-gray-500 truncate ml-2">
+                          • {currentAgent.currentTask}
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="min-h-32 bg-white rounded border border-gray-200 p-2">
+                        <OrchestratorChat />
+                      </div>
+
+                      {/* Artifacts Section */}
+                      {(() => {
+                        const agentArtifacts = getArtifactsByAgent(
+                          orchestratorAgent.id
+                        );
+                        if (agentArtifacts.length > 0) {
+                          return (
+                            <div className="space-y-2">
+                              <h5 className="text-xs font-medium text-gray-600">
+                                Artifacts
+                              </h5>
+                              {agentArtifacts.map((artifact) => (
+                                <ArtifactDisplay
+                                  key={artifact.id}
+                                  artifact={artifact}
+                                />
+                              ))}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
+            {/* Other Agent Areas Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {agentAreas
+                .filter((agent) => agent.id !== "orchestrator-agent")
+                .map((agent) => {
+                  const IconComponent = agent.icon;
+                  const currentAgent = agents.find((a) => a.id === agent.id);
+                  const agentStatus = currentAgent?.status || "idle";
+
+                  return (
+                    <Card
+                      key={agent.id}
+                      className={`${agent.color} border-2 transition-all hover:shadow-md`}
+                    >
+                      <CardHeader className="text-center">
+                        <div className="mx-auto w-12 h-12 rounded-full bg-white flex items-center justify-center mb-2">
+                          <IconComponent className="h-6 w-6 text-gray-700" />
+                        </div>
+                        <CardTitle className="text-lg">{agent.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm text-gray-600 text-center">
+                          {agent.description}
+                        </p>
+                        <div className="flex items-center justify-center gap-2">
+                          <Activity
+                            className={`h-4 w-4 transition-all duration-300 ${
+                              agentStatus === "active"
+                                ? "text-green-500 animate-pulse"
+                                : agentStatus === "busy"
+                                ? "text-orange-500 animate-spin"
+                                : "text-gray-400"
+                            }`}
+                          />
+                          <span
+                            className={`text-sm capitalize transition-all duration-300 ${
+                              agentStatus === "active"
+                                ? "text-green-600 font-medium"
+                                : agentStatus === "busy"
+                                ? "text-orange-600 font-medium"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {agentStatus}
+                          </span>
+                          {currentAgent?.currentTask && (
+                            <span className="text-xs text-gray-500 truncate ml-2">
+                              • {currentAgent.currentTask}
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <div className="min-h-24 bg-white rounded border border-gray-200 p-2">
+                            {agent.id === "analyst-agent" &&
+                            agentStatus === "active" &&
+                            !isOrchestratorMode ? (
+                              // Legacy chat interface (only if orchestrator mode is disabled)
+                              <ChatInterface
+                                agentId={agent.id}
+                                isActive={agentStatus === "active"}
+                                currentTask={currentAgent?.currentTask}
+                              />
+                            ) : agent.id === "analyst-agent" &&
+                              !isOrchestratorMode ? (
+                              <div className="text-sm text-gray-500 italic p-2 text-center">
+                                <div className="w-6 h-6 mx-auto mb-2 opacity-50">
+                                  💬
+                                </div>
+                                Chat will activate when task is assigned
+                              </div>
+                            ) : agent.id === "design-agent" &&
+                              agentStatus === "busy" ? (
+                              // Story 1.4: Design Agent Processing State
+                              <div className="text-sm text-blue-600 p-2 text-center">
+                                <div className="flex items-center justify-center space-x-2 mb-2">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span className="font-medium">
+                                    Processing...
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {isOrchestratorMode
+                                    ? "Agent working on delegated task"
+                                    : "Design Agent is autonomously working on received artifact"}
+                                </div>
+                              </div>
+                            ) : isOrchestratorMode ? (
+                              // Story 1.5: Show agent status in orchestrator mode
+                              <div className="text-sm p-2 text-center">
+                                {agentStatus === "busy" ? (
+                                  <div className="text-blue-600">
+                                    <div className="flex items-center justify-center space-x-2 mb-2">
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      <span className="font-medium">
+                                        Working...
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      Processing delegated task
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-gray-500 italic">
+                                    <div className="w-6 h-6 mx-auto mb-2 opacity-50">
+                                      🤖
+                                    </div>
+                                    Waiting for delegation
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <TaskDisplay tasks={tasks} agentId={agent.id} />
+                            )}
+                          </div>
+
+                          {/* Artifacts Section */}
+                          {(() => {
+                            const agentArtifacts = getArtifactsByAgent(
+                              agent.id
+                            );
+                            if (agentArtifacts.length > 0) {
+                              return (
+                                <div className="space-y-2">
+                                  <h5 className="text-xs font-medium text-gray-600">
+                                    Artifacts
+                                  </h5>
+                                  {agentArtifacts.map((artifact) => (
+                                    <ArtifactDisplay
+                                      key={artifact.id}
+                                      artifact={artifact}
+                                      onTransfer={
+                                        agent.id === "analyst-agent"
+                                          ? handleArtifactTransfer
+                                          : undefined
+                                      }
+                                    />
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+
         {/* Story 1.5: Orchestrator Delegation Visualization */}
-        {isOrchestratorMode && (
+        {isOrchestratorMode && isExpandedView && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <OrchestratorDelegation />
             <ResultSynthesizer />
