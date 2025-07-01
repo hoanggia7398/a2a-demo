@@ -28,6 +28,7 @@ import { OrchestratorChat } from "./orchestrator-chat";
 export function WorkbenchLayout() {
   const [userInput, setUserInput] = useState("");
   const [isExpandedView, setIsExpandedView] = useState(false);
+  const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
   const {
     addSystemLog,
     processUserRequest,
@@ -39,6 +40,18 @@ export function WorkbenchLayout() {
     tasks,
     agents,
   } = useWorkbenchStore();
+
+  const toggleAgentExpanded = (agentId: string) => {
+    setExpandedAgents((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(agentId)) {
+        newSet.delete(agentId);
+      } else {
+        newSet.add(agentId);
+      }
+      return newSet;
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,7 +208,14 @@ export function WorkbenchLayout() {
                 <div className="space-y-8">
                   {/* Orchestrator at Top */}
                   <div className="flex justify-center">
-                    <div className="bg-orange-100 border-2 border-orange-300 rounded-lg p-4 text-center min-w-48">
+                    <div
+                      className={`bg-orange-100 border-2 border-orange-300 rounded-lg p-4 text-center min-w-48 cursor-pointer hover:shadow-md transition-all ${
+                        expandedAgents.has("orchestrator-agent")
+                          ? "rounded-b-none"
+                          : ""
+                      }`}
+                      onClick={() => toggleAgentExpanded("orchestrator-agent")}
+                    >
                       <div className="mx-auto w-12 h-12 rounded-full bg-orange-200 flex items-center justify-center mb-2">
                         <Crown className="h-6 w-6 text-orange-700" />
                       </div>
@@ -216,8 +236,70 @@ export function WorkbenchLayout() {
                             ?.status || "idle"}
                         </span>
                       </div>
+                      <div className="flex items-center justify-center mt-2">
+                        {expandedAgents.has("orchestrator-agent") ? (
+                          <ChevronUp className="h-3 w-3 text-orange-600" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 text-orange-600" />
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Orchestrator Expanded Details */}
+                  {expandedAgents.has("orchestrator-agent") && (
+                    <div className="flex justify-center">
+                      <div className="bg-orange-100 border-2 border-orange-300 border-t-0 rounded-b-lg p-4 min-w-48 max-w-2xl">
+                        <div className="space-y-3 text-sm text-left">
+                          <div>
+                            <strong className="text-orange-800">
+                              Description:
+                            </strong>
+                            <p className="mt-1">
+                              👑 Tác tử Điều phối - Coordination & Workflow
+                              Management
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <strong className="text-orange-800">
+                                Status:
+                              </strong>
+                              <p className="capitalize">
+                                {agents.find(
+                                  (a) => a.id === "orchestrator-agent"
+                                )?.status || "idle"}
+                              </p>
+                            </div>
+                            <div>
+                              <strong className="text-orange-800">Mode:</strong>
+                              <p>{isOrchestratorMode ? "Active" : "Legacy"}</p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <strong className="text-orange-800">
+                              Current Activity:
+                            </strong>
+                            <p>
+                              {agents.find((a) => a.id === "orchestrator-agent")
+                                ?.currentTask || "Managing system coordination"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <strong className="text-orange-800">
+                              Orchestrator Chat:
+                            </strong>
+                            <div className="mt-2 min-h-24 bg-white rounded border border-orange-200 p-2">
+                              <OrchestratorChat />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Connecting Line */}
                   <div className="flex justify-center">
@@ -234,11 +316,18 @@ export function WorkbenchLayout() {
                           (a) => a.id === agent.id
                         );
                         const agentStatus = currentAgent?.status || "idle";
+                        const isExpanded = expandedAgents.has(agent.id);
+                        const agentArtifacts = getArtifactsByAgent(agent.id);
 
                         return (
                           <div key={agent.id} className="text-center">
                             <div
-                              className={`${agent.color} border-2 rounded-lg p-3`}
+                              className={`${
+                                agent.color
+                              } border-2 rounded-lg p-3 cursor-pointer hover:shadow-md transition-all ${
+                                isExpanded ? "rounded-b-none" : ""
+                              }`}
+                              onClick={() => toggleAgentExpanded(agent.id)}
                             >
                               <div className="mx-auto w-10 h-10 rounded-full bg-white flex items-center justify-center mb-2">
                                 <IconComponent className="h-5 w-5 text-gray-700" />
@@ -260,7 +349,139 @@ export function WorkbenchLayout() {
                                   {agentStatus}
                                 </span>
                               </div>
+                              <div className="flex items-center justify-center mt-2">
+                                {isExpanded ? (
+                                  <ChevronUp className="h-3 w-3 text-gray-500" />
+                                ) : (
+                                  <ChevronDown className="h-3 w-3 text-gray-500" />
+                                )}
+                              </div>
                             </div>
+
+                            {/* Expanded Details - UI giống Detailed View */}
+                            {isExpanded && (
+                              <div
+                                className={`${agent.color} border-2 border-t-0 rounded-b-lg p-4 space-y-3`}
+                              >
+                                {/* Description like in detailed view */}
+                                <p className="text-sm text-gray-600 text-center">
+                                  {agent.description}
+                                </p>
+
+                                {/* Status bar giống detailed view */}
+                                <div className="flex items-center justify-center gap-2">
+                                  <Activity
+                                    className={`h-4 w-4 transition-all duration-300 ${
+                                      agentStatus === "active"
+                                        ? "text-green-500 animate-pulse"
+                                        : agentStatus === "busy"
+                                        ? "text-orange-500 animate-spin"
+                                        : "text-gray-400"
+                                    }`}
+                                  />
+                                  <span
+                                    className={`text-sm capitalize transition-all duration-300 ${
+                                      agentStatus === "active"
+                                        ? "text-green-600 font-medium"
+                                        : agentStatus === "busy"
+                                        ? "text-orange-600 font-medium"
+                                        : "text-gray-500"
+                                    }`}
+                                  >
+                                    {agentStatus}
+                                  </span>
+                                  {currentAgent?.currentTask && (
+                                    <span className="text-xs text-gray-500 truncate ml-2">
+                                      • {currentAgent.currentTask}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Content area giống detailed view */}
+                                <div className="min-h-24 bg-white rounded border border-gray-200 p-2">
+                                  {agent.id === "analyst-agent" &&
+                                  agentStatus === "active" &&
+                                  !isOrchestratorMode ? (
+                                    <ChatInterface
+                                      agentId={agent.id}
+                                      isActive={agentStatus === "active"}
+                                      currentTask={currentAgent?.currentTask}
+                                    />
+                                  ) : agent.id === "analyst-agent" &&
+                                    !isOrchestratorMode ? (
+                                    <div className="text-sm text-gray-500 italic p-2 text-center">
+                                      <div className="w-6 h-6 mx-auto mb-2 opacity-50">
+                                        💬
+                                      </div>
+                                      Chat will activate when task is assigned
+                                    </div>
+                                  ) : agent.id === "design-agent" &&
+                                    agentStatus === "busy" ? (
+                                    <div className="text-sm text-blue-600 p-2 text-center">
+                                      <div className="flex items-center justify-center space-x-2 mb-2">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <span className="font-medium">
+                                          Processing...
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {isOrchestratorMode
+                                          ? "Agent working on delegated task"
+                                          : "Design Agent is autonomously working on received artifact"}
+                                      </div>
+                                    </div>
+                                  ) : isOrchestratorMode ? (
+                                    <div className="text-sm p-2 text-center">
+                                      {agentStatus === "busy" ? (
+                                        <div className="text-blue-600">
+                                          <div className="flex items-center justify-center space-x-2 mb-2">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span className="font-medium">
+                                              Working...
+                                            </span>
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            Processing delegated task
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="text-gray-500 italic">
+                                          <div className="w-6 h-6 mx-auto mb-2 opacity-50">
+                                            🤖
+                                          </div>
+                                          Waiting for delegation
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <TaskDisplay
+                                      tasks={tasks}
+                                      agentId={agent.id}
+                                    />
+                                  )}
+                                </div>
+
+                                {/* Artifacts Section giống detailed view */}
+                                {agentArtifacts.length > 0 && (
+                                  <div className="space-y-2">
+                                    <h5 className="text-xs font-medium text-gray-600">
+                                      Artifacts
+                                    </h5>
+                                    {agentArtifacts.map((artifact) => (
+                                      <ArtifactDisplay
+                                        key={artifact.id}
+                                        artifact={artifact}
+                                        onTransfer={
+                                          agent.id === "analyst-agent"
+                                            ? handleArtifactTransfer
+                                            : undefined
+                                        }
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -397,17 +618,28 @@ export function WorkbenchLayout() {
                   const IconComponent = agent.icon;
                   const currentAgent = agents.find((a) => a.id === agent.id);
                   const agentStatus = currentAgent?.status || "idle";
+                  const isExpanded = expandedAgents.has(agent.id);
 
                   return (
                     <Card
                       key={agent.id}
                       className={`${agent.color} border-2 transition-all hover:shadow-md`}
                     >
-                      <CardHeader className="text-center">
+                      <CardHeader
+                        className="text-center cursor-pointer"
+                        onClick={() => toggleAgentExpanded(agent.id)}
+                      >
                         <div className="mx-auto w-12 h-12 rounded-full bg-white flex items-center justify-center mb-2">
                           <IconComponent className="h-6 w-6 text-gray-700" />
                         </div>
-                        <CardTitle className="text-lg">{agent.name}</CardTitle>
+                        <CardTitle className="text-lg flex items-center justify-center gap-2">
+                          {agent.name}
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4 text-gray-500" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                          )}
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <p className="text-sm text-gray-600 text-center">
@@ -441,7 +673,11 @@ export function WorkbenchLayout() {
                           )}
                         </div>
                         <div className="space-y-2">
-                          <div className="min-h-24 bg-white rounded border border-gray-200 p-2">
+                          <div
+                            className={`${
+                              isExpanded ? "min-h-32" : "min-h-24"
+                            } bg-white rounded border border-gray-200 p-2`}
+                          >
                             {agent.id === "analyst-agent" &&
                             agentStatus === "active" &&
                             !isOrchestratorMode ? (
@@ -531,6 +767,67 @@ export function WorkbenchLayout() {
                             }
                             return null;
                           })()}
+
+                          {/* Expanded Details - Show agent detail like in detailed view */}
+                          {isExpanded && (
+                            <div className="mt-4 p-4 bg-gray-50 rounded border-t border-gray-200">
+                              <h6 className="text-sm font-medium text-gray-700 mb-3">
+                                Agent Details
+                              </h6>
+
+                              <div className="space-y-3 text-sm">
+                                <div>
+                                  <strong className="text-gray-600">
+                                    Description:
+                                  </strong>
+                                  <p className="mt-1">{agent.description}</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <strong className="text-gray-600">
+                                      Status:
+                                    </strong>
+                                    <p className="capitalize">{agentStatus}</p>
+                                  </div>
+                                  <div>
+                                    <strong className="text-gray-600">
+                                      Tasks:
+                                    </strong>
+                                    <p>
+                                      {
+                                        tasks.filter(
+                                          (t) => t.assignee === agent.id
+                                        ).length
+                                      }{" "}
+                                      total
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {currentAgent?.currentTask && (
+                                  <div>
+                                    <strong className="text-gray-600">
+                                      Current Task:
+                                    </strong>
+                                    <p className="mt-1">
+                                      {currentAgent.currentTask}
+                                    </p>
+                                  </div>
+                                )}
+
+                                <div>
+                                  <strong className="text-gray-600">
+                                    Last Activity:
+                                  </strong>
+                                  <p>
+                                    {currentAgent?.lastActivity?.toLocaleTimeString() ||
+                                      "No recent activity"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

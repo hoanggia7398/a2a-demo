@@ -16,9 +16,11 @@ graph TD
         Browser["🌐 Trình duyệt"]
         Backend["💻 Backend Server (Node.js/TypeScript)"]
 
-        subgraph "Frontend - Single Chat Interface"
+        subgraph "Frontend - Dual-Mode Interface"
             OrchestratorUI["👑 Orchestrator Chat Interface"]
             VisualWorkflow["📊 Visual A2A Workflow Display"]
+            CEOView["👁️ CEO Overview Mode"]
+            DetailedView["🔧 Detailed View Mode"]
         end
 
         subgraph "Backend - True A2A System"
@@ -48,9 +50,19 @@ graph TD
 
 - **Monorepo:** Sử dụng một kho chứa code duy nhất để quản lý cả frontend, backend và các thư viện chia sẻ, giúp đồng bộ và nhất quán.
 - **Centralized Orchestration Pattern:** Một Orchestrator Agent duy nhất làm điểm tương tác với người dùng và tự động điều phối toàn bộ workflow với các specialist agents thông qua True A2A Communication.
+- **Dual-Mode UI Pattern:** Frontend hỗ trợ hai chế độ xem với khả năng mở rộng chi tiết:
+  - **CEO Overview Mode:** Giao diện đơn giản, tập trung vào sơ đồ tổ chức và metrics cấp cao cho executive stakeholders
+    - **Individual Agent Expansion:** Click vào agent cards để xem chi tiết với UI giống Detailed View
+    - **Consistent Component Reuse:** Sử dụng chung ChatInterface, TaskDisplay, ArtifactDisplay components
+  - **Detailed View Mode:** Giao diện đầy đủ chức năng với chat interfaces, artifact management cho technical stakeholders
+    - **Expandable Agent Cards:** Click để mở rộng thông tin chi tiết của từng agent
+    - **Orchestrator Integration:** OrchestratorChat component được tích hợp trong expanded view
 - **Observer Pattern cho A2A Transparency:** Người dùng có thể quan sát nhưng không can thiệp vào quá trình A2A giữa các agents.
 - **Delegation Pattern:** Orchestrator phân tích requests và tự động giao nhiệm vụ cho appropriate specialist agents.
 - **Result Synthesis Pattern:** Orchestrator tự động thu thập và tổng hợp kết quả từ tất cả specialist agents trước khi trình bày cho người dùng.
+- **Conditional Rendering Pattern:** UI components được render có điều kiện dựa trên view mode để tối ưu performance và user experience.
+- **Expandable Component Pattern:** Agent cards có thể được mở rộng để hiển thị chi tiết với state management hiệu quả (expandedAgents Set<string>).
+- **Component Reusability Pattern:** Expanded details trong CEO mode sử dụng chính xác các components giống như Detailed View để đảm bảo tính nhất quán UI.
 - **Server-Side Rendering (SSR) với Next.js:** Tận dụng khả năng của Next.js để có cấu trúc dự án rõ ràng.
 - **Sử dụng mẫu `AgentExecutor`:** Đóng gói logic cốt lõi của mỗi tác tử vào một `class` riêng biệt theo mẫu `AgentExecutor` từ `A2A-JS SDK`.
 
@@ -60,7 +72,7 @@ graph TD
 | :--------------------- | :----------- | :------------------ | :---------------------------------------- | :---------------------------------------------- |
 | **Monorepo Tool**      | Turborepo    | \~1.13              | Quản lý kho code chung (monorepo)         | Tối ưu cho các dự án JavaScript/TypeScript.     |
 | **Frontend Language**  | TypeScript   | \~5.4               | Ngôn ngữ phát triển chính cho frontend    | Tích hợp sẵn với Next.js, an toàn kiểu dữ liệu. |
-| **Frontend Framework** | Next.js      | \~15.3.4              | Khung sườn chính để xây dựng giao diện    | Lựa chọn của bạn, hệ sinh thái mạnh mẽ.         |
+| **Frontend Framework** | Next.js      | \~15.3.4            | Khung sườn chính để xây dựng giao diện    | Lựa chọn của bạn, hệ sinh thái mạnh mẽ.         |
 | **UI Library**         | Tailwind CSS | \~3.4               | Cung cấp các lớp CSS tiện ích để tạo kiểu | Xây dựng giao diện nhanh, nhất quán.            |
 | **UI Components**      | shadcn/ui    | \~0.8               | Bộ sưu tập các component giao diện        | Dễ cài đặt, tùy chỉnh, chuẩn truy cập.          |
 | **State Management**   | Zustand      | \~4.5               | Quản lý trạng thái giao diện người dùng   | Nhẹ, đơn giản và hiệu quả cho demo.             |
